@@ -2,9 +2,13 @@
 
 namespace Pkshetlie\PaginationDbal\Service;
 
+use Pkshetlie\PaginationDbal\Exception\PaginationException;
+use App\Routing\UrlGenerator;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Exception;
+use Pkshetlie\PaginationDbal\Models\OrderModel;
 use Pkshetlie\PaginationDbal\Models\PaginationModel;
+use Pkshetlie\PaginationDbal\Twig\Extension\PaginationExtension;
 use Symfony\Component\HttpFoundation\Request;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
@@ -17,11 +21,32 @@ class PaginationManager
      */
     private $queryPostProcess;
 
-    public function __construct(Environment $twig)
+    private Request $request;
+    private ?QueryBuilder $queryBuilder = null;
+
+    private PaginationModel $pagination;
+
+    public function __construct(Environment $twig, Request $request, UrlGenerator $urlGenerator)
     {
         /** @var FilesystemLoader $loader */
         $loader = $twig->getLoader();
-        $loader->addPath(__DIR__ . '/../../twig');
+        $loader->addPath(__DIR__.'/../../twig');
+        $twig->addExtension(new PaginationExtension($request, $urlGenerator));
+
+        $this->request = $request;
+    }
+
+    public function setQueryBuilder(QueryBuilder $qb): self
+    {
+        return $this->setQb($qb);
+    }
+
+    public function setQb(QueryBuilder $qb): self
+    {
+        $this->pagination = new PaginationModel();
+
+        $this->queryBuilder = $qb;
+        return $this;
     }
 
     public function setNbItemPerPage(int $nbItemPerPage = 25): self
@@ -38,79 +63,104 @@ class PaginationManager
         return $this;
     }
 
-    public function process(QueryBuilder $queryBuilder, Request $request): PaginationModel
+    public function process(): PaginationModel
     {
-        $pagination = new PaginationModel();
-        $pagination->setLastEntityId($request->query->get('plentid' . $pagination->getIdentifier(), 0))->setIsPartial(
-                $request->query->get('ppartial' . $pagination->getIdentifier(), false)
-            );
+        if(!$this->queryBuilder){
+            throw new PaginationException("the QueryBuilder need to be set (->setQB)");
+        }
 
-        $usableQuery = clone $queryBuilder;
-        $key = 'ppage' . $pagination->getIdentifier();
-        $page = (!empty($request->query->get($key, 1)) ? $request->query->get($key, 1) : 1) - 1;
+        $countQuery = clone $this->queryBuilder;
+        $page = $this->getPage();
         $startAt = $page * $this->nbItemPerPage;
 
-        if ($queryBuilder->getQueryPart('having')) {
-            throw new Exception('Pagination manager n\'est pas compatible avec les requetes comportant des HAVING');
+        if ($this->queryBuilder->getQueryPart('having')) {
+            throw new PaginationException('Pagination manager n\'est pas compatible avec les requetes comportant des HAVING');
         }
 
         try {
-            $countRslt = $usableQuery->select(
-                    'COUNT( DISTINCT ' . $this->getBaseAlias($queryBuilder) . '.id ) as count_nb_elt'
-                )->execute()->fetchFirstColumn();
+            $countRslt = $countQuery
+                ->select('COUNT(*) as count_nb_elt')
+                ->execute()->fetchFirstColumn();
         } catch (Exception $e) {
-            throw new Exception('Probleme pagination : ' . $e->getMessage());
+            throw new PaginationException('Probleme pagination : '.$e->getMessage());
         }
 
         $nbPages = ceil(($countRslt != null ? $countRslt[0] : 0) / $this->nbItemPerPage);
         $nbPages = max($nbPages, 0);
         $startAt = max($startAt, 0);
 
-        $entities = $queryBuilder->setMaxResults($this->nbItemPerPage)->setFirstResult($startAt)->execute(
-            )->fetchAllAssociative();
+        $entities = $this->queryBuilder
+            ->setMaxResults($this->nbItemPerPage)
+            ->setFirstResult($startAt)
+            ->execute()
+            ->fetchAllAssociative();
 
-        $pagination->setEntities($entities)->setPages($nbPages)->setCount(
-                ($countRslt != null ? $countRslt[0] : 0)
-            )->setCurrent($page + 1);
+        $this->pagination
+            ->setEntities($entities)
+            ->setPages($nbPages)
+            ->setCount((null !== $countRslt ? $countRslt[0] : 0))
+            ->setCurrent($page + 1);
 
         if (isset($this->queryPostProcess)) {
-            call_user_func($this->queryPostProcess, $pagination);
+            call_user_func($this->queryPostProcess, $this->pagination);
         }
 
-        return $pagination;
+        return $this->pagination;
     }
 
-    private function getBaseAlias(QueryBuilder $qb): string
+    private function getPage(int $default = 1): int
     {
-        if (empty($qb->getQueryPart('from')[0]['alias'])) {
-            throw new Exception('You need to put an alias in ->from(\'tablename\',\'alias\')');
+        $page = $this->request->query->getInt('ppage'.PaginationModel::getStaticIdentifier(), $default) - 1;
+
+        if ($page < 0) {
+            $page = 0;
         }
-        return $qb->getQueryPart('from')[0]['alias'];
+
+        return $page;
     }
 
-    public function ordering(
-        QueryBuilder $queryBuilder,
-        array $correspondance,
-        Request $request,
-        array $default = []
-    ): self {
-        if ($request->query->get('order')) {
-            if (isset($correspondance[$request->query->get('order')])) {
-                $queryBuilder->orderBy(
-                    $correspondance[$request->query->get('order')],
-                    $request->query->get('by') == 'asc' ? 'asc' : 'desc'
-                );
-            }
+    public function ordering(OrderModel $orderModel, bool $keepNativeOrderBy = false): self
+    {
+        if(!$this->queryBuilder){
+            throw new PaginationException("the QueryBuilder need to be set (->setQB)");
         }
+        $this->pagination->setOrderModel($orderModel);
 
-        if (empty($queryBuilder->getQueryPart('orderBy'))) {
-            if (!empty($default)) {
-                if (isset($correspondance[$request->query->get('order')])) {
-                    $queryBuilder->orderBy($correspondance[$default[0]], $default[1]);
+        if ($this->getOrder()) {
+            if ($orderModel->aliasExists($this->getOrder())) {
+                if (empty($this->queryBuilder->getQueryPart('orderBy')) && $keepNativeOrderBy) {
+                    $this->queryBuilder->addOrderBy(
+                        $orderModel->getColumn($this->getOrder()),
+                        $this->getBy()
+                    );
+                }else{
+                    $this->queryBuilder->orderBy(
+                        $orderModel->getColumn($this->getOrder()),
+                        $this->getBy()
+                    );
                 }
             }
         }
 
         return $this;
+    }
+
+    private function getOrder(): ?string
+    {
+        return $this->request->query->get('order'.PaginationModel::getStaticIdentifier());
+    }
+
+    private function getBy(): string
+    {
+        return $this->request->query->get('by'.PaginationModel::getStaticIdentifier()) == 'asc' ? 'asc' : 'desc';
+    }
+
+    private function getBaseAlias(QueryBuilder $qb): string
+    {
+        if (empty($qb->getQueryPart('from')[0]['alias'])) {
+            throw new PaginationException('You need to put an alias in ->from(\'tablename\',\'alias\')');
+        }
+
+        return $qb->getQueryPart('from')[0]['alias'];
     }
 }

@@ -4,6 +4,8 @@ namespace  Pkshetlie\PaginationDbal\Models;
 
 
 
+use Symfony\Component\HttpFoundation\Request;
+
 class PaginationModel
 {
     private static int $increment = 0;
@@ -14,8 +16,9 @@ class PaginationModel
     private int $current;
     private array $currentOrder;
     private int $identifier;
-    private bool $isPartial;
+    private bool $isPartial = false;
     private int $lastEntityId;
+    private OrderModel $orderModel;
 
     public function __construct()
     {
@@ -83,6 +86,11 @@ class PaginationModel
         return $this->identifier;
     }
 
+    public static function getStaticIdentifier(): int
+    {
+        return self::$increment;
+    }
+
     public function getLastEntityId(): int
     {
         return $this->lastEntityId;
@@ -105,5 +113,16 @@ class PaginationModel
         $this->isPartial = $isPartial;
 
         return $this;
+    }
+
+    public function setOrderModel(OrderModel $orderModel): self
+    {
+        $this->orderModel = $orderModel;
+        return $this;
+    }
+
+    public function getOrderModel(): OrderModel
+    {
+        return $this->orderModel;
     }
 }

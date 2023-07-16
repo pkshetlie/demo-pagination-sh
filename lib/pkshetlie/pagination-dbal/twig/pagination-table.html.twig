@@ -14,11 +14,35 @@
     {% endblock %}
     </tbody>
 </table>
-{% import "pagination-macro.html.twig" as pagination_macro %}
 
 {% block pagination %}
 {% if pagination is defined %}
-    {{ pagination_macro.paginate(pagination) }}
+    <form action="{{ url(app.page.url_twig) }}" method="get">
+        <nav aria-label="Navigation table">
+            <ul class="pagination pagination-light justify-content-end my-10">
+                {% for page in pagination|get_pages('...') %}
+                    <li class="page-item {% if page.numero == pagination.current %}active{% endif %}">
+                        {% if page.url is not empty %}
+                            <a class="page-link" href="{{ page.url }}">{{ page.numero }}</a>
+                        {% else %}
+                            <a class="page-link" onclick="return false;" href="#">{{ page.numero }}</a>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+
+
+                <input type="text" class="form-control ml-5 mb-5"
+                       style="font-size: 1.4rem;width: 8rem;height: calc(3.4rem + 2px);"
+                       name="{{ ("ppage"~pagination.identifier) }}"
+                       placeholder="Page">
+                <li>
+                    <button type='submit' class="btn btn-primary page-link">Go</button>
+                </li>
+            </ul>
+        </nav>
+    </form>
+
+
 {% else %}
     Make your own pagination and write it in block pagination
 {% endif %}

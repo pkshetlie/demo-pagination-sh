@@ -22,8 +22,9 @@
     {% embed "pagination-table.html.twig" with {pagination: songs} %}
         {% block thead %}
             <tr>
-                <th>Title</th>
+                <th>{{ pagination|order_link('title', 'Title') }}</th>
                 <th>Author</th>
+                <th>{{ pagination|order_link('mapper', 'Mapper') }}</th>
             </tr>
         {% endblock %}
         {% block tbody %}
