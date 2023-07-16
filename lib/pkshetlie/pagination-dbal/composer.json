@@ -1,0 +1,32 @@
+{
+  "name": "pkshetlie/pagination-dbal",
+  "license": "GPL-3.0-or-later",
+  "description": "Easy way to make html table with paginations",
+  "keywords": [
+    "pagination",
+    "page",
+    "doctrine",
+    "dbal",
+    "twig"
+  ],
+
+  "homepage": "https://github.com/pkshetlie/pagination-dbal",
+  "require": {
+    "php": ">=7.0",
+    "symfony/http-foundation": "^5.4",
+    "doctrine/dbal": "^2.13"
+  },
+  "authors": [
+    {
+      "name": "Pierrick POBELLE",
+      "email": "pierrick.pobelle@gmail.com",
+      "homepage": "http://pierrick.pobelle.com",
+      "role": "Developer"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Pkshetlie\\PaginationDbal\\": "src"
+    }
+  }
+}

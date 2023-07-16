@@ -1,0 +1,45 @@
+{
+  "name": "pkshetlie/pagination-test-dbal",
+  "license": "free",
+  "type": "usecase",
+  "description": "use case for test pagination",
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "App\\Tests\\": "tests/"
+    }
+  },
+  "require": {
+    "php": ">=7.4",
+    "ext-pdo": "*",
+    "doctrine/dbal": "^2.13",
+    "pkshetlie/pagination-dbal": "@dev",
+    "symfony/http-foundation": "^5.4",
+    "twig/twig": "2.15"
+  },
+  "require-dev": {
+    "phpspec/prophecy-phpunit": "^2.0",
+    "phpunit/phpunit": "^9.5",
+    "squizlabs/php_codesniffer": "*"
+  },
+  "repositories": [
+    {
+      "type": "path",
+      "url": "lib/pkshetlie/pagination-dbal"
+    }
+  ],
+  "config": {
+    "preferred-install": {
+      "*": "dist"
+    },
+    "bin-dir": "bin/",
+    "sort-packages": true,
+    "allow-plugins": {
+      "php-http/discovery": true
+    }
+  }
+}

@@ -1,0 +1,25 @@
+<table class="table pk-pagination {{ attr.class }}">
+    <thead>
+    {% block thead %}
+        <tr>
+            <th>please set block thead</th>
+        </tr>
+    {% endblock %}
+    </thead>
+    <tbody>
+    {% block tbody %}
+        <tr>
+            <th>please set block tbody</th>
+        </tr>
+    {% endblock %}
+    </tbody>
+</table>
+{% import "pagination-macro.html.twig" as pagination_macro %}
+
+{% block pagination %}
+{% if pagination is defined %}
+    {{ pagination_macro.paginate(pagination) }}
+{% else %}
+    Make your own pagination and write it in block pagination
+{% endif %}
+{% endblock %}
