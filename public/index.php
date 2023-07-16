@@ -48,7 +48,7 @@ try {
         ->process();
 
     if ($pagination->isPartial()) {
-        echo $twig->render('partial/rows.html.twig', [
+        echo $twig->render('partial/table.html.twig', [
             'songs' => $pagination
         ]);
     } else {

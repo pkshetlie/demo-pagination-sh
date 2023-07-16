@@ -1,4 +1,9 @@
-<table class="table pk-pagination {{ attr.class }}">
+<div class="pk-pagination  {{ attr.class }}"  data-pid="{{ pagination.identifier }}">
+<table class="table {{ table_attr.class }}"
+       data-pid="{{ pagination.identifier }}"
+{% for data,value in table_attr.data %}
+data-{{ data }}="{{ value }}"
+{% endfor %}>
     <thead>
     {% block thead %}
         <tr>
@@ -47,3 +52,4 @@
     Make your own pagination and write it in block pagination
 {% endif %}
 {% endblock %}
+</div>

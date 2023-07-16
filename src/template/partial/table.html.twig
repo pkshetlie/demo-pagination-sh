@@ -1,0 +1,17 @@
+{% embed "pagination-table.html.twig" with {pagination: songs,attr:{class:'pagination-ajax'}} %}
+    {% block thead %}
+        <tr>
+            <th>{{ pagination|order_link('title', 'Title') }}</th>
+            <th>Author</th>
+            <th>{{ pagination|order_link('mapper', 'Mapper') }}</th>
+        </tr>
+    {% endblock %}
+    {% block tbody %}
+        {% include 'partial/rows.html.twig' with {songs: songs} %}
+    {% endblock %}
+    {% block pagination %}
+        {{ parent() }}
+        et du texte en plus
+    {% endblock %}
+{% endembed %}
+

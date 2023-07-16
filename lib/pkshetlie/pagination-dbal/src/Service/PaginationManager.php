@@ -96,6 +96,7 @@ class PaginationManager
             ->fetchAllAssociative();
 
         $this->pagination
+            ->setIsPartial($this->isPartial())
             ->setEntities($entities)
             ->setPages($nbPages)
             ->setCount((null !== $countRslt ? $countRslt[0] : 0))
@@ -148,6 +149,11 @@ class PaginationManager
     private function getOrder(): ?string
     {
         return $this->request->query->get('order'.PaginationModel::getStaticIdentifier());
+    }
+
+    private function isPartial(): string
+    {
+        return $this->request->query->has('ajax');
     }
 
     private function getBy(): string

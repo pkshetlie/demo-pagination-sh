@@ -19,23 +19,55 @@
 </head>
 <body>
 <div class="container">
-    {% embed "pagination-table.html.twig" with {pagination: songs} %}
-        {% block thead %}
-            <tr>
-                <th>{{ pagination|order_link('title', 'Title') }}</th>
-                <th>Author</th>
-                <th>{{ pagination|order_link('mapper', 'Mapper') }}</th>
-            </tr>
-        {% endblock %}
-        {% block tbody %}
-            {% include 'partial/rows.html.twig' with {songs: songs} %}
-        {% endblock %}
-        {% block pagination %}
-            {{ parent() }}
-            et du texte en plus
-        {% endblock %}
-    {% endembed %}
+    {% include 'partial/table.html.twig' with {pagination: songs} %}
 </div>
+
+
+<script>
+    $(function () {
+        let sendData = function(pid,url,data){
+            $(document).trigger('pagination.preload');
+            $.ajax({
+                url: url+'&ajax=true',
+                data: data,
+                type: 'GET',
+                dataType:'html',
+                success: function(html){
+                    $('.pagination-ajax[data-pid='+pid+']').html(html);
+                    $(document).trigger('pagination.success');
+                    $(document).trigger('pagination.loaded');
+                },
+                error: function(){
+                    $('.pagination-ajax[data-pid='+pid+']').html('');
+                    $(document).trigger('pagination.error');
+                    $(document).trigger('pagination.loaded');
+                }
+            });
+        };
+
+        $(document).on('click', '.pagination-ajax a', function () {
+            let t = $(this)
+            let pid = t.closest('.pagination-ajax').data('pid')
+            if(t.data('no-ajax')){
+                return true;
+            }
+            sendData(pid,t.attr('href'));
+            return false;
+        });
+
+        $(document).on('submit', '.pagination-ajax form', function () {
+            let t = $(this)
+            if(t.data('no-ajax')){
+                return true;
+            }
+            let pid = t.closest('.pagination-ajax').data('pid')
+            let data = t.serialize();
+            sendData(pid,t.attr('action'), data);
+            return false;
+        });
+
+    });
+</script>
 </body>
 </html>
 

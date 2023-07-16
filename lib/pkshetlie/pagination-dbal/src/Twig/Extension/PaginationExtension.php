@@ -76,8 +76,7 @@ class PaginationExtension extends AbstractExtension
     public function generateOrderLink(
         PaginationModel $pagination,
         string $columnAlias,
-        string $label,
-        bool $ajax = true
+        string $label
     ) {
         if (!$pagination->getOrderModel()->aliasExists($columnAlias)) {
             throw new PaginationException(
@@ -108,6 +107,6 @@ class PaginationExtension extends AbstractExtension
         }
 
         return '<a href="'.$this->urlGenerator->generate($request->get('_route'), $mergedParameters).
-            '" class="sortby'.$sortClasses.''.($ajax ? ' pagination-ajax-sort' : '').'" >'.$label.'</a >';
+            '" class="sortby'.$sortClasses.'" >'.$label.'</a >';
     }
 }
