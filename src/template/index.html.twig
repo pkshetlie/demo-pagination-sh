@@ -33,7 +33,7 @@
                 type: 'GET',
                 dataType:'html',
                 success: function(html){
-                    $('.pagination-ajax[data-pid='+pid+']').html(html);
+                    $('.pagination-ajax[data-pid='+pid+']').html($(html).filter('.pk-pagination').html());
                     $(document).trigger('pagination.success');
                     $(document).trigger('pagination.loaded');
                 },
